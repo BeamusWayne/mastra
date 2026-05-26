@@ -158,6 +158,17 @@ export const mastra = new Mastra({
     toolProviders: {
       composio: new ComposioToolProvider({ apiKey: '' }),
     },
+    builder: {
+      enabled: true,
+      features: {
+        agent: {
+          tools: true,
+          agents: true,
+          workflows: true,
+          memory: true,
+        },
+      },
+    },
   }),
   channels: {
     slack: new SlackProvider({
