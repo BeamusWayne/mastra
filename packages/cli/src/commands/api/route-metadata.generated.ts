@@ -440,6 +440,101 @@ export const API_ROUTE_METADATA = {
       "listProperty": "permissions"
     }
   },
+  "GET /auth/fga/resource-types": {
+    "method": "GET",
+    "path": "/auth/fga/resource-types",
+    "pathParams": [],
+    "queryParams": [],
+    "bodyParams": [],
+    "hasQuery": false,
+    "hasBody": false,
+    "responseShape": {
+      "kind": "object-property",
+      "listProperty": "resourceTypes"
+    }
+  },
+  "GET /auth/fga/resources/:resourceType/:resourceId/access": {
+    "method": "GET",
+    "path": "/auth/fga/resources/:resourceType/:resourceId/access",
+    "pathParams": [
+      "resourceType",
+      "resourceId"
+    ],
+    "queryParams": [],
+    "bodyParams": [],
+    "hasQuery": false,
+    "hasBody": false,
+    "responseShape": {
+      "kind": "object-property",
+      "listProperty": "access"
+    }
+  },
+  "POST /auth/fga/resources/:resourceType/:resourceId/access": {
+    "method": "POST",
+    "path": "/auth/fga/resources/:resourceType/:resourceId/access",
+    "pathParams": [
+      "resourceType",
+      "resourceId"
+    ],
+    "queryParams": [],
+    "bodyParams": [
+      "membershipId",
+      "roleSlug"
+    ],
+    "hasQuery": false,
+    "hasBody": true,
+    "responseShape": {
+      "kind": "single"
+    }
+  },
+  "DELETE /auth/fga/resources/:resourceType/:resourceId/access/:membershipId": {
+    "method": "DELETE",
+    "path": "/auth/fga/resources/:resourceType/:resourceId/access/:membershipId",
+    "pathParams": [
+      "resourceType",
+      "resourceId",
+      "membershipId"
+    ],
+    "queryParams": [
+      "roleSlug"
+    ],
+    "bodyParams": [],
+    "hasQuery": true,
+    "hasBody": false,
+    "responseShape": {
+      "kind": "single"
+    }
+  },
+  "GET /auth/fga/resource-types/:resourceType/roles": {
+    "method": "GET",
+    "path": "/auth/fga/resource-types/:resourceType/roles",
+    "pathParams": [
+      "resourceType"
+    ],
+    "queryParams": [],
+    "bodyParams": [],
+    "hasQuery": false,
+    "hasBody": false,
+    "responseShape": {
+      "kind": "object-property",
+      "listProperty": "roles"
+    }
+  },
+  "GET /auth/organization/members": {
+    "method": "GET",
+    "path": "/auth/organization/members",
+    "pathParams": [],
+    "queryParams": [
+      "search"
+    ],
+    "bodyParams": [],
+    "hasQuery": true,
+    "hasBody": false,
+    "responseShape": {
+      "kind": "object-property",
+      "listProperty": "members"
+    }
+  },
   "GET /workflows": {
     "method": "GET",
     "path": "/workflows",
