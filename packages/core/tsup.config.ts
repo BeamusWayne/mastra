@@ -100,6 +100,7 @@ export default defineConfig({
         '@internal/external-types',
         '@internal/core',
         '@internal/voice',
+        '@internal/auth',
       ]),
     );
 
