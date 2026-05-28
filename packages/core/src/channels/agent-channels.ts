@@ -7,7 +7,6 @@ import type { AgentSignalContents } from '../agent/signals';
 import type { AgentThreadSubscription } from '../agent/types';
 import type { IMastraLogger } from '../logger/logger';
 import type { Mastra } from '../mastra';
-import type { StorageThreadType } from '../memory/types';
 import type { InputProcessor, InputProcessorOrWorkflow } from '../processors';
 import { isProcessorWorkflow } from '../processors';
 import { RequestContext } from '../request-context';
@@ -130,6 +129,14 @@ export class AgentChannels {
    * platform per AgentChannels instance.
    */
   private warnedToolDisplayFallback = new Set<string>();
+
+  /**
+   * External thread id → Mastra thread id/resourceId. The mapping is created
+   * once in `getOrCreateThread` and never changes for the lifetime of a thread,
+   * so caching it in-process is always safe (no invalidation needed). Lets us
+   * skip the `listThreads({ filter })` metadata scan on warm requests.
+   */
+  private threadIdCache = new Map<string, { id: string; resourceId: string }>();
 
   constructor(config: ChannelConfig) {
     // Normalize: extract adapters and per-adapter configs
@@ -883,6 +890,9 @@ export class AgentChannels {
     let historyBlock: string | undefined; // TODO: convert platform thread chat history into Mastra messages instead of one big text block
     const maxMessages = this.threadContext.maxMessages ?? 10;
     if (maxMessages > 0 && !chatThread.isDM) {
+      // `chatThread.isSubscribed()` forwards to the state adapter, which
+      // caches `true` answers in-process. The first warm-path read costs
+      // storage; subsequent ones are free.
       const alreadySubscribed = await chatThread.isSubscribed();
       if (!alreadySubscribed) {
         this.logger?.debug?.(`Fetching thread history (max ${maxMessages}) for first mention in ${chatThread.id}`);
@@ -1038,6 +1048,10 @@ export class AgentChannels {
     // so it's safe for this write to land in parallel with — or even after — the
     // signal dispatch below. We pass the thread by id (not snapshot) so the run
     // reads the latest metadata itself.
+    //
+    // The state adapter caches `subscribed: true` in-process and short-circuits
+    // both the metadata scan and the `updateThread` write when it's already
+    // confirmed, so re-issuing this call on every message is cheap.
     void chatThread.subscribe().catch(err => {
       this.log('debug', 'chatThread.subscribe failed', err);
     });
@@ -1343,7 +1357,11 @@ export class AgentChannels {
     platform: string;
     resourceId: string;
     mastra: Mastra;
-  }): Promise<StorageThreadType> {
+  }): Promise<{ id: string; resourceId: string }> {
+    const cacheKey = `${platform}:${externalThreadId}`;
+    const cached = this.threadIdCache.get(cacheKey);
+    if (cached) return cached;
+
     const storage = mastra.getStorage();
     if (!storage) {
       throw new Error('Storage is required for channel thread mapping. Configure storage in your Mastra instance.');
@@ -1368,10 +1386,13 @@ export class AgentChannels {
     });
 
     if (threads.length > 0) {
-      return threads[0]!;
+      const found = threads[0]!;
+      const entry = { id: found.id, resourceId: found.resourceId };
+      this.threadIdCache.set(cacheKey, entry);
+      return entry;
     }
 
-    return memoryStore.saveThread({
+    const created = await memoryStore.saveThread({
       thread: {
         id: crypto.randomUUID(),
         title: `${platform} conversation`,
@@ -1381,6 +1402,9 @@ export class AgentChannels {
         metadata,
       },
     });
+    const entry = { id: created.id, resourceId: created.resourceId };
+    this.threadIdCache.set(cacheKey, entry);
+    return entry;
   }
 
   /**
