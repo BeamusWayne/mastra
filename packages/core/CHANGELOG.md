@@ -1,5 +1,15 @@
 # @mastra/core
 
+## 1.38.0-alpha.3
+
+### Patch Changes
+
+- Fixed resumed agent observability spans so `agent.resumeStream()` and `agent.resumeGenerate()` use the resume payload as the `AGENT_RUN` span input instead of an empty array. ([#17134](https://github.com/mastra-ai/mastra/pull/17134))
+
+  Resumed spans now also link back to the suspended trace when persisted tracing context is available, so human-in-the-loop approval flows show the decision payload and remain connected in tracing backends. Fixes #17075.
+
+- Fixed AGENT_RUN spans not closing when an agent stream is aborted mid-flight (e.g. browser disconnect or `AbortController.abort()`). Aborted runs now end with `{ status: 'aborted', reason: 'abort' }` so traces are exported to observability backends. ([#17203](https://github.com/mastra-ai/mastra/pull/17203))
+
 ## 1.38.0-alpha.2
 
 ### Minor Changes
